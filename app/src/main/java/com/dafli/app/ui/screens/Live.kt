@@ -123,9 +123,9 @@ fun WelcomeLive() {
         Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 24.dp), verticalArrangement = Arrangement.Bottom) {
             DafliLockup(42.dp)
             Spacer(Modifier.height(16.dp))
-            T("Every song.\nFree. No limits.", DType.H1.copy(fontSize = 36.sp, lineHeight = 42.sp))
+            T("Hindi music.\nMade for you.", DType.H1.copy(fontSize = 36.sp, lineHeight = 42.sp))
             Spacer(Modifier.height(12.dp))
-            T("Stream full songs from independent artists around the world. No account, no ads, no payment.", DType.Body, color = DColor.TextDim)
+            T("Discover Hindi and Bollywood songs, romantic favourites and classics. No account or API key needed.", DType.Body, color = DColor.TextDim)
             Spacer(Modifier.height(28.dp))
             PrimaryButton("Get started") { nav.go(Route.Preferences) }
             Spacer(Modifier.height(16.dp))
@@ -218,21 +218,21 @@ fun HomeLive() {
             val last = lib.recent.firstOrNull()
             val heroTrack = last ?: (trending.state as? Load.Ok)?.value?.firstOrNull()
             if (heroTrack != null) HeroCard(
-                label = if (last != null) "JUMP BACK IN" else "TRENDING #1", t = heroTrack,
-                onOpen = { player.play(heroTrack, if (last != null) "Recently played" else "Trending this week", if (last != null) lib.recent.toList() else (trending.state as? Load.Ok)?.value); nav.go(Route.NowPlaying) },
+                label = if (last != null) "JUMP BACK IN" else "HINDI MUSIC", t = heroTrack,
+                onOpen = { player.play(heroTrack, if (last != null) "Recently played" else "Explore Hindi songs", if (last != null) lib.recent.toList() else (trending.state as? Load.Ok)?.value); nav.go(Route.NowPlaying) },
             ) else LoadBox(trending, 210) { }
         }
         if (lib.recent.isNotEmpty()) {
             item { Column { Spacer(Modifier.height(28.dp)); SectionHeader("Recently played") { nav.go(Route.History) } } }
             item { TrackRail(lib.recent.take(10), "Recently played") }
         }
-        item { Column { Spacer(Modifier.height(28.dp)); SectionHeader("Trending this week", sub = "What everyone is playing") { nav.go(Route.PlaylistPage(Collection("trending", "Trending this week", "Top songs on ${AppConfig.MUSIC_SOURCE}", Art.Hero, Kind.Mix))) } } }
-        item { LoadBox(trending, 180) { TrackRail(it.take(12), "Trending this week") } }
+        item { Column { Spacer(Modifier.height(28.dp)); SectionHeader("Explore Hindi songs", sub = "Browse the Hindi catalogue") { nav.go(Route.Genre("All Hindi songs")) } } }
+        item { LoadBox(trending, 180) { TrackRail(it.take(12), "Explore Hindi songs") } }
         picks.forEach { g ->
             item { Column { Spacer(Modifier.height(28.dp)); SectionHeader("For you · ${g.name}") { nav.go(Route.Genre(g.name)) } } }
             item { GenreRail(g.api, "For you · ${g.name}") }
         }
-        item { Column { Spacer(Modifier.height(28.dp)); SectionHeader("Popular playlists", action = null) } }
+        item { Column { Spacer(Modifier.height(28.dp)); SectionHeader("Hindi playlists", action = null) } }
         item {
             LoadBox(playlists, 180) { list ->
                 LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 12.dp)) {
@@ -249,7 +249,7 @@ fun HomeLive() {
                 }
             }
         }
-        item { Column { Spacer(Modifier.height(28.dp)); SectionHeader("Browse by genre") { nav.switchTab(Tab.Search) } } }
+        item { Column { Spacer(Modifier.height(28.dp)); SectionHeader("Browse Hindi music") { nav.switchTab(Tab.Search) } } }
         item { GenreGrid(Genres.take(6)) }
     }
 }
@@ -330,13 +330,13 @@ fun SearchLive() {
                 }
             }
         }
-        item { Column { Spacer(Modifier.height(24.dp)); SectionHeader("Top 5 this week", sub = "Most played on ${AppConfig.MUSIC_SOURCE}", action = "See all") { nav.go(Route.PlaylistPage(Collection("trending", "Trending this week", "Top songs on ${AppConfig.MUSIC_SOURCE}", Art.Hero, Kind.Mix))) } } }
+        item { Column { Spacer(Modifier.height(24.dp)); SectionHeader("Hindi picks", sub = "Discover Hindi favourites", action = "See all") { nav.go(Route.Genre("All Hindi songs")) } } }
         item {
             LoadBox(chart, 300) { list ->
-                Column(Modifier.padding(top = 8.dp)) { list.forEachIndexed { i, t -> TrackRow(t, index = i + 1, onClick = { player.play(t, "Top 5 this week", list) }) } }
+                Column(Modifier.padding(top = 8.dp)) { list.forEachIndexed { i, t -> TrackRow(t, index = i + 1, onClick = { player.play(t, "Hindi picks", list) }) } }
             }
         }
-        item { Column { Spacer(Modifier.height(20.dp)); SectionHeader("Browse all genres", action = null) } }
+        item { Column { Spacer(Modifier.height(20.dp)); SectionHeader("Browse Hindi music", action = null) } }
         item { GenreGrid(Genres) }
     }
 }
@@ -382,7 +382,8 @@ fun SearchResultsLive(query: String) {
     val repo = LocalRepo.current
     val player = LocalPlayer.current
     var tab by rememberSaveable { mutableIntStateOf(0) }
-    val res = rememberLoad(query) { repo.search(query) }
+    val music = rememberPagedMusic(query) { page -> repo.searchPage(query, page) }
+    val res = music.loaded
     Column(Modifier.fillMaxSize().background(DColor.Night)) {
         Row(Modifier.statusBarsPadding().padding(start = 4.dp, end = 16.dp, top = 4.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             IconBtn(Icons.AutoMirrored.Rounded.ArrowBack, "Back") { nav.back() }
@@ -393,7 +394,13 @@ fun SearchResultsLive(query: String) {
             when (val s = res.state) {
                 Load.Loading -> item { LoadBox(res, 400) {} }
                 is Load.Failed -> item { ErrorCard(s.message, res.retry) }
-                is Load.Ok -> resultsList(s.value, tab, { tab = it }, player = { t -> player.play(t, "Search: $query", s.value.tracks) }, nav = nav)
+                is Load.Ok -> {
+                    resultsList(s.value, tab, { tab = it }, player = { t -> player.play(t, "Search: $query", s.value.tracks) }, nav = nav)
+                    if (tab == 0 && s.value.tracks.isNotEmpty()) item {
+                        SecondaryButton("See all Hindi songs", Modifier.padding(16.dp)) { tab = 1 }
+                    }
+                    if (tab == 1) item { MoreSongs(music) }
+                }
             }
         }
     }
@@ -440,8 +447,9 @@ fun GenreLive(name: String) {
     val repo = LocalRepo.current
     val player = LocalPlayer.current
     val g = Genres.firstOrNull { it.name == name } ?: Genres.first()
-    val tracks = rememberLoad(g.api) { repo.trending(g.api, 30) }
-    val pls = rememberLoad("pl:" + g.name) { repo.search(g.name).playlists }
+    val music = rememberPagedMusic(g.api) { page -> repo.browse(g.api, page) }
+    val tracks = music.loaded
+    val pls = rememberLoad("pl:" + g.name) { repo.search(g.api).playlists }
     LazyColumn(Modifier.fillMaxSize().background(DColor.Night), contentPadding = PaddingValues(bottom = LocalChromePad.current + 16.dp)) {
         item {
             Box(Modifier.fillMaxWidth().height(300.dp)) {
@@ -456,12 +464,15 @@ fun GenreLive(name: String) {
         }
         item {
             Row(Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                T("Trending this week", DType.Title, Modifier.weight(1f))
-                (tracks.state as? Load.Ok)?.value?.firstOrNull()?.let { first -> PlayFab(g.name, first, list = (tracks.state as Load.Ok).value) }
+                T("Hindi songs", DType.Title, Modifier.weight(1f))
+                (tracks.state as? Load.Ok)?.value?.tracks?.firstOrNull()?.let { first -> PlayFab(g.name, first, list = (tracks.state as Load.Ok).value.tracks) }
             }
         }
         when (val s = tracks.state) {
-            is Load.Ok -> itemsIndexed(s.value, key = { _, t -> t.id }) { i, t -> TrackRow(t, index = i + 1, onClick = { player.play(t, g.name, s.value) }) }
+            is Load.Ok -> {
+                itemsIndexed(s.value.tracks, key = { _, t -> t.id }) { i, t -> TrackRow(t, index = i + 1, onClick = { player.play(t, g.name, s.value.tracks) }) }
+                item { MoreSongs(music) }
+            }
             Load.Loading -> item { LoadBox(tracks, 400) {} }
             is Load.Failed -> item { ErrorCard(s.message, tracks.retry) }
         }
@@ -487,7 +498,8 @@ fun ArtistLive(seed: Artist) {
     val player = LocalPlayer.current
     val id = seed.id ?: ""
     val artist = rememberLoad("a" + id) { repo.artist(id) }
-    val tracks = rememberLoad("at" + id) { repo.artistTracks(id) }
+    val music = rememberPagedMusic("at" + id) { page -> repo.artistSongsPage(id, page) }
+    val tracks = music.loaded
     val a = (artist.state as? Load.Ok)?.value ?: seed
     var more by rememberSaveable { mutableStateOf(false) }
     LazyColumn(Modifier.fillMaxSize().background(DColor.Night), contentPadding = PaddingValues(bottom = LocalChromePad.current + 16.dp)) {
@@ -502,7 +514,7 @@ fun ArtistLive(seed: Artist) {
                 }
             }
         }
-        val list = (tracks.state as? Load.Ok)?.value.orEmpty()
+        val list = (tracks.state as? Load.Ok)?.value?.tracks.orEmpty()
         item {
             Row(Modifier.padding(horizontal = 16.dp, vertical = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Spacer(Modifier.weight(1f))
@@ -516,10 +528,11 @@ fun ArtistLive(seed: Artist) {
         item { SectionHeader("Popular", action = null) }
         when (val s = tracks.state) {
             is Load.Ok -> {
-                val shown = if (more) s.value else s.value.take(5)
-                itemsIndexed(shown, key = { _, t -> t.id }) { i, t -> TrackRow(t, index = i + 1, subtitle = t.genre ?: t.artist, onClick = { player.play(t, a.name, s.value) }) }
-                if (s.value.size > 5) item { TextLink(if (more) "Show less" else "See more", Modifier.padding(horizontal = 12.dp, vertical = 4.dp), color = DColor.TextDim) { more = !more } }
-                if (s.value.isEmpty()) item { Note("No playable songs from this artist yet.") }
+                val shown = if (more) s.value.tracks else s.value.tracks.take(5)
+                itemsIndexed(shown, key = { _, t -> t.id }) { i, t -> TrackRow(t, index = i + 1, subtitle = t.genre ?: t.artist, onClick = { player.play(t, a.name, s.value.tracks) }) }
+                if (s.value.tracks.size > 5) item { TextLink(if (more) "Show less" else "See more", Modifier.padding(horizontal = 12.dp, vertical = 4.dp), color = DColor.TextDim) { more = !more } }
+                if (more || s.value.tracks.size <= 5) item { MoreSongs(music) }
+                if (s.value.tracks.isEmpty()) item { Note("No playable Hindi songs on this page.") }
             }
             Load.Loading -> item { LoadBox(tracks, 300) {} }
             is Load.Failed -> item { ErrorCard(s.message, tracks.retry) }
@@ -542,7 +555,8 @@ fun PlaylistLive(c: Collection) {
     val repo = LocalRepo.current
     val player = LocalPlayer.current
     val platform = LocalPlatform.current
-    val tracks = rememberLoad(c.id) { repo.playlistTracks(c) }
+    val music = rememberPagedMusic(c.id) { page -> repo.playlistSongsPage(c, page) }
+    val tracks = music.loaded
     LazyColumn(Modifier.fillMaxSize().background(DColor.Night), contentPadding = PaddingValues(bottom = LocalChromePad.current + 16.dp)) {
         item {
             Box(Modifier.fillMaxWidth().background(Brush.verticalGradient(listOf(Color(0xFF2D2140), DColor.Night))).statusBarsPadding()) {
@@ -556,10 +570,10 @@ fun PlaylistLive(c: Collection) {
                 T(c.subtitle, DType.Label.copy(fontWeight = FontWeight.Normal), color = DColor.TextDim, modifier = Modifier.padding(top = 4.dp))
             }
         }
-        val list = (tracks.state as? Load.Ok)?.value.orEmpty()
+        val list = (tracks.state as? Load.Ok)?.value?.tracks.orEmpty()
         item {
             Row(Modifier.padding(start = 4.dp, end = 16.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (c.remoteId != null) IconBtn(Icons.Rounded.Share, "Share", tint = DColor.TextDim) { platform.share(c.title, "${c.title} — listen on ${AppConfig.MUSIC_SOURCE}: ${AppConfig.MUSIC_SOURCE_URL}") }
+                if (c.shareUrl != null || c.remoteId != null) IconBtn(Icons.Rounded.Share, "Share", tint = DColor.TextDim) { platform.share(c.title, c.shareUrl ?: "${c.title} — listen on ${AppConfig.MUSIC_SOURCE}: ${AppConfig.MUSIC_SOURCE_URL}") }
                 Spacer(Modifier.weight(1f))
                 if (list.isNotEmpty()) {
                     IconBtn(Icons.Rounded.Shuffle, "Shuffle play", tint = DColor.TextDim) { player.shuffle = true; player.play(list.random(), c.title, list) }
@@ -570,8 +584,9 @@ fun PlaylistLive(c: Collection) {
         }
         when (val s = tracks.state) {
             is Load.Ok -> {
-                items(s.value, key = { it.id }) { t -> TrackRow(t, onClick = { player.play(t, c.title, s.value) }) }
-                if (s.value.isEmpty()) item { Note("This playlist has no playable songs.") }
+                items(s.value.tracks, key = { it.id }) { t -> TrackRow(t, onClick = { player.play(t, c.title, s.value.tracks) }) }
+                item { MoreSongs(music) }
+                if (s.value.tracks.isEmpty()) item { Note("No playable Hindi songs on this page.") }
             }
             Load.Loading -> item { LoadBox(tracks, 400) {} }
             is Load.Failed -> item { ErrorCard(s.message, tracks.retry) }
@@ -688,11 +703,11 @@ fun SettingsLive() {
     ListScreen("Settings") {
         item { GroupLabel("Listening") }
         item { ToggleRow("Autoplay similar songs", "Keeps music going when a list ends", lib.autoplay) { lib.setAutoplayPref(it) } }
-        item { SettingsRow("Your taste", "Genres used for Home", icon = Icons.Rounded.Tune, onClick = { nav.go(Route.EditTaste) }) }
+        item { SettingsRow("Your taste", "Hindi categories used for Home", icon = Icons.Rounded.Tune, onClick = { nav.go(Route.EditTaste) }) }
         item { GroupLabel("Support") }
         item { SettingsRow("Help & feedback", icon = Icons.AutoMirrored.Rounded.HelpOutline, onClick = { nav.go(Route.Help) }) }
         item { SettingsRow("Privacy policy", icon = Icons.Rounded.Lock, onClick = { nav.go(Route.PrivacyPolicy) }) }
-        item { SettingsRow("Music from ${AppConfig.MUSIC_SOURCE}", "Songs are streamed from the ${AppConfig.MUSIC_SOURCE} network of independent artists", icon = Icons.Rounded.Info, onClick = { platform.openUrl(AppConfig.MUSIC_SOURCE_URL) }) }
+        item { SettingsRow("Music from ${AppConfig.MUSIC_SOURCE}", "Hindi songs via a free community API; service availability may vary", icon = Icons.Rounded.Info, onClick = { platform.openUrl(AppConfig.MUSIC_SOURCE_URL) }) }
         item { SettingsRow("About", value = "Version ${platform.appVersion}", chevron = false) }
         item { GroupLabel("Data") }
         item {
@@ -714,8 +729,8 @@ fun HelpLive() {
     val platform = LocalPlatform.current
     var open by rememberSaveable { mutableIntStateOf(-1) }
     val faqs = listOf(
-        "Is Dafli free?" to "Yes. No subscription, no ads, no payment. Songs are streamed free from ${AppConfig.MUSIC_SOURCE}, a platform where independent artists share their music.",
-        "Why can’t I find a Bollywood song?" to "Dafli only plays music that artists have published on ${AppConfig.MUSIC_SOURCE}. Big film labels are not on it, so many film songs are not available.",
+        "Is Dafli free?" to "The app has no subscription or ads. It uses a free, unofficial JioSaavn community API. Availability can change.",
+        "Why can’t I find a Bollywood song?" to "Search by song title or artist name, in Hindi or English. Only Hindi songs with a playable link are shown; catalogue and regional availability may vary.",
         "A song stopped playing" to "Check your internet connection. Some songs are removed by their artists; skip to the next one.",
         "Where are my liked songs stored?" to "Only on this phone. Reinstalling the app or using Settings → Reset app clears them.",
         "How do I report a song?" to "Open the song’s ⋮ menu and tap Report. We look at every report.",
@@ -757,12 +772,11 @@ fun PrivacyPolicyScreen() {
 
 /** Same text as docs/privacy.html (the public page linked from Play Console). */
 val PRIVACY_TEXT = listOf(
-    "" to "Dafli (“the app”) is a free music player. This policy explains what the app does with your information. Last updated: 28 September 2026.",
+    "" to "Dafli (“the app”) is a free music player. This policy explains what the app does with your information. Last updated: 30 September 2026.",
     "Information we collect" to "None. Dafli has no accounts, no analytics and no ads. We do not collect, store or sell personal data.",
     "Stored on your phone" to "Your name (if you type one), liked songs, recently played songs, recent searches and genre choices are saved only on your device. They are deleted when you use Settings → Reset app or uninstall the app.",
-    "Music streaming" to "To play and search music, the app sends requests to the public ${AppConfig.MUSIC_SOURCE} API (api.audius.co and its content servers). Like any website, those servers receive your IP address and the song or search you request. See ${AppConfig.MUSIC_SOURCE}’s privacy policy at audius.co/legal/privacy-policy.",
+    "Music streaming" to "To play and search music, the app sends requests to the public ${AppConfig.MUSIC_SOURCE} API (saavn.sumit.co, JioSaavn and saavncdn.com content servers). Like any website, those servers receive your IP address and the song or search you request. See ${AppConfig.MUSIC_SOURCE}’s privacy policy at www.jiosaavn.com/corporate/privacy.",
     "Permissions" to "Internet (to stream music) and a media playback service (so music keeps playing with the screen off). No location, contacts, camera or microphone access.",
     "Children" to "Dafli is not directed at children under 13.",
     "Contact" to "Questions? Email ${AppConfig.SUPPORT_EMAIL}.",
 )
-

@@ -9,6 +9,8 @@ object AppConfig {
     const val PRIVACY_URL = "https://dafli-music.github.io/privacy"
 
     /** Where the music comes from (required attribution). */
-    const val MUSIC_SOURCE = "Audius"
-    const val MUSIC_SOURCE_URL = "https://audius.co"
+    const val MUSIC_SOURCE = "JioSaavn (community API)"
+    const val MUSIC_SOURCE_URL = "https://www.jiosaavn.com"
+    /** Compatible self-hosted instances can replace this URL. Never embed secrets here. */
+    const val SAAVN_API_URL = "https://saavn.sumit.co/api"
 }

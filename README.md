@@ -1,6 +1,6 @@
 # Dafli — Android app (Kotlin + Jetpack Compose)
 
-> **v1 (Play Store build):** real music from the free Audius API, background playback (Media3), and likes/history saved on the phone. Steps to go live are in **PLAYSTORE_GUIDE.md**. Store text, icon, feature graphic and privacy page are in **store/**.
+> **Hindi music build:** Hindi songs from a free community JioSaavn API, background playback (Media3), and likes/history saved on the phone. Steps to go live are in **PLAYSTORE_GUIDE.md**. Store text, icon, feature graphic and privacy page are in **store/**.
 
 *Music, sabka.* This is the working Android build of the Dafli case study from Figma. It has every screen (S01–S54, minus the podcast and audiobook screens we removed), the splash animation, and a player you can click through.
 
@@ -22,8 +22,8 @@ To build from the command line, run `./gradlew assembleDebug`. The APK ends up i
 | `ui/screens/` | All the screens (see the list below) plus the bottom sheets |
 | `nav/` | A small back-stack navigator. The route names match the S-numbers in Figma. |
 | `player/` | Player state (queue, shuffle, repeat, sleep timer) + `Media3Engine` / `PlaybackService` for real audio |
-| `data/remote/` | `AudiusApi`: trending, search, artists, playlists, stream URLs |
-| `data/Repository.kt` | `MusicRepository` interface, with `AudiusRepository` (live) and `SampleRepository` (previews) |
+| `data/remote/` | `SaavnApi`: Hindi search, artists, playlists and playable URLs; `AudiusApi` for legacy library links |
+| `data/Repository.kt` | `MusicRepository` interface, with `SaavnRepository` (live, Hindi only) and `SampleRepository` (previews) |
 | `data/Library.kt` | Likes, history, searches and taste, saved in SharedPreferences |
 | `AppConfig.kt` | Support email, privacy URL, music source |
 | `data/SampleData.kt` | Fictional sample catalogue used only for previews and screenshots |
@@ -48,3 +48,13 @@ To build from the command line, run `./gradlew assembleDebug`. The APK ends up i
 - The v1 Welcome screen has one button, **Get started**. There is no fake login, because the app works without an account.
 - Screens that need a backend (login, chat, Listen Together, downloads, lyrics, video) are kept in code for later but are not reachable in v1.
 - The splash has a system splash (Android 12 SplashScreen API) showing the d on Night. The Compose animation then continues from that same frame. Tap anywhere to skip.
+
+## Hindi music API
+
+The live app uses https://saavn.sumit.co/api (no API key). This is an unofficial community API, maintained at https://github.com/sumitkolhe/jiosaavn-api. It is not an official JioSaavn SDK or a guarantee of music licensing, uptime or catalogue availability. Before a public/Play Store release, obtain appropriate permissions for the catalogue and update the public privacy page.
+
+Home searches the wider Hindi catalogue. All Hindi songs, search results, artist pages and playlists support Load more; they are not restricted to a Top 50 list. Each search page requests 40 matches (the upstream maximum), filters language to Hindi, and skips missing playable links. Search supports Roman text and Devanagari. Previously saved Audius likes/history remain on the device.
+
+Change SAAVN_API_URL in AppConfig.kt to point to a compatible self-hosted instance if needed. The app prefers 160 kbps audio and 500x500 covers, falling back to available HTTPS variants. Successful requests are cached for five minutes; failed requests can be retried.
+
+Validation: ./gradlew testDebugUnitTest assembleDebug. Tests cover Hindi filtering, unplayable/duplicate songs, metadata decoding, audio-quality fallback, pagination beyond 50 songs, legacy categories, partial search failure, retry and cancellation.

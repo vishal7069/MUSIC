@@ -13,7 +13,7 @@ data class Track(
     val durationSec: Int,
     val explicit: Boolean = false,
     val album: String = title,
-    /** Remote cover (Audius). When null the bundled [art] is shown. */
+    /** Remote cover. When null the bundled [art] is shown. */
     val artUrl: String? = null,
     /** Playable audio URL. Null = sample track (UI only, no audio). */
     val streamUrl: String? = null,
@@ -42,10 +42,11 @@ data class Collection(
     val art: Art,
     val kind: Kind = Kind.Playlist,
     val artUrl: String? = null,
-    /** Audius playlist id when this is a real playlist. */
+    /** Provider playlist id (sa: prefix for JioSaavn) when this is a real playlist. */
     val remoteId: String? = null,
-    /** Audius genre when this collection is "trending in genre". */
+    /** Discovery query when this collection represents a category. */
     val genre: String? = null,
+    val shareUrl: String? = null,
 )
 
 data class Person(val name: String, val handle: String, val initial: String, val tint: Color)

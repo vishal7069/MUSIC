@@ -2,22 +2,23 @@ package com.dafli.app.data
 
 import com.dafli.app.data.remote.AudiusApi
 
-/** Genres offered by Audius, shown in onboarding and Browse. `api` is the exact Audius value. */
+/** Hindi discovery categories shown in onboarding and Browse. `api` is a search query. */
 data class Genre(val name: String, val api: String, val art: Art)
 
 val Genres = listOf(
-    Genre("Lo-fi", "Lo-Fi", Art.LoFi),
-    Genre("Hip-Hop", "Hip-Hop/Rap", Art.HipHop),
-    Genre("Electronic", "Electronic", Art.C),
-    Genre("Pop", "Pop", Art.Bollywood),
-    Genre("World", "World", Art.Punjabi),
-    Genre("Devotional", "Devotional", Art.Devotional),
-    Genre("R&B / Soul", "R&B/Soul", Art.B),
-    Genre("Alternative", "Alternative", Art.Indie),
-    Genre("Ambient", "Ambient", Art.H),
-    Genre("Classical", "Classical", Art.A),
-    Genre("Acoustic", "Acoustic", Art.E),
-    Genre("Dance", "Dance & EDM", Art.Workout),
+    Genre("All Hindi songs", "Hindi", Art.Bollywood),
+    Genre("Bollywood", "Hindi hits", Art.Bollywood),
+    Genre("Romantic", "Hindi romantic", Art.B),
+    Genre("Sad songs", "Hindi sad", Art.H),
+    Genre("Party", "Hindi party", Art.Workout),
+    Genre("Retro", "Hindi retro", Art.Retro),
+    Genre("Devotional", "Hindi bhajan", Art.Devotional),
+    Genre("Lo-fi", "Hindi lofi", Art.LoFi),
+    Genre("Hip-Hop", "Hindi rap", Art.HipHop),
+    Genre("Indie", "Hindi indie", Art.Indie),
+    Genre("Chill", "Hindi chill", Art.C),
+    Genre("Acoustic", "Hindi acoustic", Art.E),
+    Genre("Ghazals", "Hindi ghazal", Art.A),
 )
 
 /** Where the screens get music from. Swap implementations for tests and previews. */
@@ -28,9 +29,21 @@ interface MusicRepository {
     suspend fun artist(id: String): Artist
     suspend fun artistTracks(id: String): List<Track>
     suspend fun search(q: String): SearchResults
+    suspend fun searchPage(q: String, page: Int): SearchResults =
+        if (page == 1) search(q) else SearchResults(emptyList(), emptyList(), emptyList())
+    suspend fun browse(q: String, page: Int): SearchResults = searchPage(q, page)
+    suspend fun artistSongsPage(id: String, page: Int): SearchResults =
+        SearchResults(if (page == 1) artistTracks(id) else emptyList(), emptyList(), emptyList())
+    suspend fun playlistSongsPage(c: Collection, page: Int): SearchResults =
+        SearchResults(if (page == 1) playlistTracks(c) else emptyList(), emptyList(), emptyList())
 }
 
-data class SearchResults(val tracks: List<Track>, val artists: List<Artist>, val playlists: List<Collection>)
+data class SearchResults(
+    val tracks: List<Track>, val artists: List<Artist>, val playlists: List<Collection>,
+    /** Provider matches can include covers, remixes and languages filtered out of this app. */
+    val totalMatches: Int = 0,
+    val nextPage: Int? = null,
+)
 
 class AudiusRepository(private val api: AudiusApi = AudiusApi()) : MusicRepository {
     // Small in-memory cache so going back to a screen is instant.
