@@ -7,7 +7,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import com.dafli.app.data.AudiusRepository
+import com.dafli.app.data.SaavnRepository
 import com.dafli.app.platform.AndroidPlatform
 import com.dafli.app.theme.DafliTheme
 
@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
         )
         super.onCreate(savedInstanceState)
         val platform = AndroidPlatform(applicationContext)
-        val repo = AudiusRepository()
+        val repo = SaavnRepository()
         setContent { DafliTheme { DafliApp(platform, repo) } }
     }
 }
