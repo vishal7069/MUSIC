@@ -15,7 +15,10 @@ import org.json.JSONObject
 class LocalLibrary(private val store: KeyValueStore) {
     val liked = mutableStateListOf<Track>().apply { addAll(load("liked")) }
     val recent = mutableStateListOf<Track>().apply { addAll(load("recent")) }
-    val genres = mutableStateListOf<String>().apply { addAll(store.getString("genres")?.split("|")?.filter { it.isNotBlank() }.orEmpty()) }
+    val genres = mutableStateListOf<String>().apply {
+        addAll(store.getString("genres")?.split("|")?.filter { it.isNotBlank() }
+            ?.map { hindiCategoryQuery(it) }?.distinct().orEmpty())
+    }
     val searches = mutableStateListOf<String>().apply { addAll(store.getString("searches")?.split("\n")?.filter { it.isNotBlank() }.orEmpty()) }
 
     fun addSearch(q: String) {
