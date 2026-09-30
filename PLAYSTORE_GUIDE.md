@@ -5,7 +5,7 @@ Ye poori list order mein hai. ✅ = maine kar diya, 👤 = aapko karna hai (paym
 ---
 
 ## 1. App ready ✅
-- Free music **Audius API** se aata hai, poore gaane. Koi API key nahi chahiye.
+- Hindi music **unofficial JioSaavn community API** se aata hai. Koi API key nahi chahiye; service availability badal sakti hai.
 - Background mein music chalta hai, aur notification / lock screen se control hota hai (Media3 ExoPlayer).
 - Liked songs, history aur taste sirf phone par save hote hain. Koi server ya database nahi chahiye.
 - **Android 16 (API 36)** target kiya hai, jo Google ka 2026 wala rule hai.
@@ -56,5 +56,5 @@ Ye poori list order mein hai. ✅ = maine kar diya, 👤 = aapko karna hai (paym
 `app/build.gradle.kts` mein `versionCode` +1 karo aur `versionName` badlo → nayi signed `.aab` banao → Production mein upload karo.
 
 ### Zaroori note
-- Gaane Audius ke hain (independent artists). Bade Bollywood labels ke gaane legal tareeke se free mein kisi API se nahi milte.
+- Community API official JioSaavn service nahi hai. Public/Play Store release se pehle music catalogue ke rights/permissions verify karo aur public privacy page ko JioSaavn, saavn.sumit.co aur saavncdn.com ke liye update karo.
 - Agar koi galat ya copyright wala gaana mile, to app mein har gaane ke ⋮ menu mein **Report** option hai. Play Store ki UGC policy ke liye ye zaroori hai.
